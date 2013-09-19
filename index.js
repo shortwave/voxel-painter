@@ -22,6 +22,8 @@ module.exports = function() {
   var wireframeMaterial = new THREE.MeshBasicMaterial(wireframeOptions)
   var animationFrames = []
   var currentFrame = 0
+  var isoLight = new THREE.DirectionalLight( 0x606060 );
+  var isoLight2 = new THREE.DirectionalLight( 0xAAAAAA );
   var colors = ['2ECC71', '3498DB', '34495E', 'E67E22', 'ECF0F1'].map(function(c) { return hex2rgb(c) })
   for( var c = 0; c < 5; c++ ) {
     addColorToPalette(c)
@@ -256,19 +258,35 @@ module.exports = function() {
     var distance = camera.position.distanceTo(origin)
     var tooFar = distance  > 3000
     var tooClose = distance < 300
+    console.log(distance - delta)
     if (delta > 0 && tooFar) return
     if (delta < 0 && tooClose) return
     radius = distance // for mouse drag calculations to be correct
-    camera.translateZ( delta )
+    //camera.translateZ( delta )
+    camera.setLens(200)
   }
-
+  
+  function rotateLight() {
+    var t1 = theta + 45
+    isoLight.position.x = radius * Math.sin( t1 * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 )
+    isoLight.position.y = radius * Math.sin( phi * Math.PI / 360 )
+    isoLight.position.z = radius * Math.cos( t1 * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 )
+    
+    var t2 = theta - 45
+    isoLight2.position.x = radius * Math.sin( t2 * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 )
+    isoLight2.position.y = radius * Math.sin( phi * Math.PI / 360 )
+    isoLight2.position.z = radius * Math.cos( t2 * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 )
+    
+  }
+  
   function setIsometricAngle() {
-
+    
     theta += 90
 
     camera.position.x = radius * Math.sin( theta * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 )
     camera.position.y = radius * Math.sin( phi * Math.PI / 360 )
     camera.position.z = radius * Math.cos( theta * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 )
+    rotateLight()
     camera.updateMatrix()
   }
 
@@ -414,7 +432,9 @@ module.exports = function() {
     container = document.createElement( 'div' )
     document.body.appendChild( container )
 
-    camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 10000 )
+    //camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 10000 )
+    camera = new THREE.CombinedCamera( window.innerWidth / 2, window.innerHeight / 2, 70, 1, 10000, - 500, 10000 );
+    camera.toOrthographic()
     camera.position.x = radius * Math.sin( theta * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 )
     camera.position.y = radius * Math.sin( phi * Math.PI / 360 )
     camera.position.z = radius * Math.cos( theta * Math.PI / 360 ) * Math.cos( phi * Math.PI / 360 )
@@ -475,10 +495,10 @@ module.exports = function() {
     var ambientLight = new THREE.AmbientLight( 0x606060 )
     scene.add( ambientLight )
     
-    var directionalLight = new THREE.DirectionalLight( 0xffffff );
-		directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
-		scene.add( directionalLight );
-    				
+		scene.add( isoLight );
+		
+		scene.add( isoLight2 );
+    rotateLight()
     // var directionalLight = new THREE.DirectionalLight( 0xffffff )
     // directionalLight.position.x = Math.random() - 0.5
     // directionalLight.position.y = Math.random() - 0.5
@@ -494,7 +514,7 @@ module.exports = function() {
     // scene.add( directionalLight )
 
     var hasWebGL =  ( function () { try { return !! window.WebGLRenderingContext && !! document.createElement( 'canvas' ).getContext( 'experimental-webgl' ); } catch( e ) { return false; } } )()
-
+    hasWebGL = false
     if (hasWebGL) renderer = new THREE.WebGLRenderer({antialias: true})
     else renderer = new THREE.CanvasRenderer()
 
@@ -669,6 +689,7 @@ module.exports = function() {
       case 81: changeFrame(); break
       case 65: setIsometricAngle(); break
       case 87: addFrame(); break
+      case 83: rotateLight(); break
     }
 
   }
